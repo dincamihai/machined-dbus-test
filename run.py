@@ -32,23 +32,46 @@ def shell(*args):
 
 
 def create(image):
-    machined.CreateMachine(
+    machined.CreateMachineWithNetwork(
         image.Name,  # name
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # id
         'systemd-nspawn',  # service
         'container',  # class
         0,  # leader eg: 16722L
         image.Path,  # root_directory
-        [])  # scope_properties
+        [4],  # ifindices
+        [
+            ('Delegate', 'yes'),
+            ('Slice', 'machine.slice'),
+            ('TasksMax', 8192),
+            ('KillMode', 'mixed'),
+            ('Type', 'notify'),
+            ('RestartForceExitStatus', 133),
+            ('SuccessExitStatus', 133),
+            ('DevicePolicy', 'strict'),
+            ('DeviceAllow', '/dev/null', 'rwm'),
+            ('DeviceAllow', '/dev/zero', 'rwm'),
+            ('DeviceAllow', '/dev/full', 'rwm'),
+            ('DeviceAllow', '/dev/random', 'rwm'),
+            ('DeviceAllow', '/dev/urandom', 'rwm'),
+            ('DeviceAllow', '/dev/tty', 'rwm'),
+            ('DeviceAllow', '/dev/net/tun', 'rwm'),
+            ('DeviceAllow', '/dev/pts/ptmx', 'rw'),
+            ('DeviceAllow', 'char-pts', 'rw'),
+            ('DeviceAllow', '/dev/loop-control', 'rw'),
+            ('DeviceAllow', 'block-loop', 'rw'),
+            ('DeviceAllow', 'block-blkext', 'rw'),
+        ]
+    )  # scope_properties
     return machine(image.Name)
 
 
 if __name__ == "__main__":
     available = images()
-    name = "test{0}".format(sha256().hexdigest()[:8])
+    name = "test{0}".format(sha256().hexdigest()[:10])
     test = clone(available[0], name)
     try:
         create(test)
-        pty, pty_path = shell(name, 'mihai', '/usr/bin/ls', ['-al'], {})
+        import pdb; pdb.set_trace()
     finally:
         test.Remove()
